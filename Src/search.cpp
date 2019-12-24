@@ -10,6 +10,7 @@ Search::~Search() {}
 
 SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
+    auto t = std::chrono::high_resolution_clock::now();
     bool found = false;
     open.insert(Node(map.getStartPosition().first, map.getGoalPosition().second));
 
@@ -52,22 +53,19 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     sresult.pathfound = found;
     sresult.nodescreated = open.size() + close.size();
     if (sresult.pathfound) {
-        std::cout << "azazazazaza" << std::endl;
         auto current_node = &(*lookupCloseNode(map.getGoalPosition()));
-        auto n = *lookupCloseNode(map.getGoalPosition());
-        std::cout << (lookupCloseNode(map.getGoalPosition()) == close.end()) << std::endl;
+        sresult.pathlength = current_node->g;
         const auto finish = *lookupCloseNode(map.getStartPosition());
         hppath.push_back(*current_node);
         while (*current_node != finish) {
-            std::cout << "qweqweq" << std::endl;
             current_node = current_node->parent;
-            std::cout << current_node << std::endl;
             hppath.push_back(*current_node);
-            std::cout << "ololo" << std::endl;
         }
 
         sresult.hppath = sresult.lppath = &hppath;
     }
+    std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
+    sresult.time = d.count();
     return sresult;
 }
 
