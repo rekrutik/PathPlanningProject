@@ -38,6 +38,8 @@ class Map
         int  getValue(int i, int j) const;
         int getMapHeight() const;
         int getMapWidth() const;
+        std::pair<int, int> getStartPosition() const;
+        std::pair<int, int> getGoalPosition() const;
         double getCellSize() const;
 
 };
