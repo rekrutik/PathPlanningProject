@@ -12,7 +12,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 {
     auto t = std::chrono::high_resolution_clock::now();
     bool found = false;
-    open.insert(Node(map.getStartPosition().first, map.getGoalPosition().second));
+    open.insert(Node(map.getStartPosition().first, map.getStartPosition().second));
 
     sresult.numberofsteps = 0;
 
