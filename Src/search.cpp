@@ -40,7 +40,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 
             Node new_node(move.position.first, move.position.second);
             new_node.g = new_g;
-            new_node.H = 0;
+            new_node.H = getHeuristics(new_node.getPosition(), map, options);
             new_node.parent = &(*close_it);
             open.insert(new_node);
         }
@@ -63,6 +63,22 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
     sresult.time = d.count();
     return sresult;
+}
+
+double Search::getHeuristics(const std::pair<int, int> &position, const Map &Map, const EnvironmentOptions &options) {
+    auto finish = Map.getGoalPosition();
+    auto dx = abs(position.first - finish.first);
+    auto dy = abs(position.second - finish.second);
+    switch (options.metrictype) {
+        case CN_SP_MT_MANH:
+            return dx + dy;
+        case CN_SP_MT_CHEB:
+            return std::max(dx, dy);
+        case CN_SP_MT_EUCL:
+            return sqrt(dx * 1LL * dx + dy * 1LL * dy);
+        case CN_SP_MT_DIAG:
+            return abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
+    }
 }
 
 decltype(Search::close.cbegin()) Search::lookupCloseNode(const std::pair<int, int> &position) {

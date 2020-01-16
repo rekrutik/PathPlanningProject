@@ -3,9 +3,10 @@
 #include "ilogger.h"
 #include "searchresult.h"
 #include "environmentoptions.h"
+#include <algorithm>
 #include <list>
 #include <vector>
-#include <math.h>
+#include <cmath>
 #include <limits>
 #include <chrono>
 #include <set>
@@ -44,6 +45,8 @@ class Search
 
         decltype(close.cbegin()) lookupCloseNode(const std::pair<int, int> &position);
         decltype(open.cbegin()) lookupOpenNode(const std::pair<int, int> &position);
+        double getHeuristics(const std::pair<int, int>&position,
+                const Map &Map, const EnvironmentOptions &options);
         std::vector<Adjacent> getAdjacent(const std::pair<int, int> &position,
                                           const Map &Map, const EnvironmentOptions &options);
 
