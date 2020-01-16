@@ -135,6 +135,7 @@ PathPlanning.exe ../../Examples/example.xml
 Результат запуска:
 ![cmake_run2](./Images/cmake.png)
 
+
 ## Тестирование 
 Linux test result:
 
