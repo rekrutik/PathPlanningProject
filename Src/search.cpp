@@ -25,18 +25,14 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             continue;
         }
 
-        std::cout << node.i << " " << node.j << " " << " " << node.parent << std::endl;
-
         auto close_it = close.insert(node).first;
 
         if (node.getPosition() == map.getGoalPosition()) {
-            std::cout << "qwe" << std::endl;
             found = true;
             break;
         }
 
         for (const auto &move : getAdjacent(node.getPosition(), map, options)) {
-            std::cout << move.position.first << " " << move.position.second << " " << std::endl;
             if (lookupCloseNode(move.position) != close.end()) {
                 continue;
             }
@@ -90,11 +86,15 @@ Search::getAdjacent(const std::pair<int, int> &position, const Map &map, const E
     std::vector<Adjacent> res;
     for (int i = -1; i <= 1; i++) {
         for (int j = -1; j <= 1; j++) {
+            bool diagonal = abs(i) + abs(j) == 2;
             if (i == 0 && j == 0) continue;
             if (!map.CellOnGrid(position.first + i, position.second + j) || !map.CellIsTraversable(position.first + i, position.second + j)) continue;
+            if (!options.allowdiagonal && diagonal) continue;
+            if (!options.cutcorners && diagonal && (map.CellIsObstacle(position.first, position.second + j) || map.CellIsObstacle(position.first + i, position.second))) continue;
+            if (!options.allowsqueeze && diagonal && map.CellIsObstacle(position.first, position.second + j) && map.CellIsObstacle(position.first + i, position.second)) continue;
             Adjacent adj;
             adj.position = std::make_pair(position.first + i, position.second + j);
-            adj.delta = abs(i) + abs(j) == 2 ? sqrt(2.0) : 1.0;
+            adj.delta = diagonal ? sqrt(2.0) : 1.0;
             res.push_back(adj);
         }
     }
