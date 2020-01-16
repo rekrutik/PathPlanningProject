@@ -52,13 +52,29 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
         auto current_node = &(*lookupCloseNode(map.getGoalPosition()));
         sresult.pathlength = current_node->g;
         const auto finish = *lookupCloseNode(map.getStartPosition());
-        hppath.push_back(*current_node);
+        lppath.push_back(*current_node);
         while (*current_node != finish) {
             current_node = current_node->parent;
-            hppath.push_back(*current_node);
+            lppath.push_back(*current_node);
         }
 
-        sresult.hppath = sresult.lppath = &hppath;
+        sresult.lppath = &lppath;
+        hppath.push_back(lppath.front());
+        bool direction_set = false;
+        std::pair<int, int> direction = {0, 0};
+        for (auto it = next(lppath.begin()); it != lppath.end(); ++it) {
+            auto prv = prev(it);
+            std::pair<int, int> new_direction = {it->i - prv->i, it->j - prv->j};
+            if (!direction_set) {
+                direction = new_direction;
+                direction_set = true;
+            } else if (direction != new_direction) {
+                hppath.push_back(*prv);
+                direction_set = false;
+            }
+        }
+        hppath.push_back(lppath.back());
+        sresult.hppath = &hppath;
     }
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
     sresult.time = d.count();
