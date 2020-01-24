@@ -81,20 +81,28 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     return sresult;
 }
 
-double Search::getHeuristics(const std::pair<int, int> &position, const Map &Map, const EnvironmentOptions &options) {
-    auto finish = Map.getGoalPosition();
-    auto dx = abs(position.first - finish.first);
-    auto dy = abs(position.second - finish.second);
-    switch (options.metrictype) {
-        case CN_SP_MT_MANH:
-            return dx + dy;
-        case CN_SP_MT_CHEB:
-            return std::max(dx, dy);
-        case CN_SP_MT_EUCL:
-            return sqrt(dx * 1LL * dx + dy * 1LL * dy);
-        case CN_SP_MT_DIAG:
-            return abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
+double Search::getHeuristics(
+        const std::pair<int, int> &position,
+        const Map &Map,
+        const EnvironmentOptions &options) {
+    if (options.searchtype == CN_SP_ST_DIJK) {
+        return 0.0;
+    } else if (options.searchtype == CN_SP_ST_ASTAR) {
+        auto finish = Map.getGoalPosition();
+        auto dx = abs(position.first - finish.first);
+        auto dy = abs(position.second - finish.second);
+        switch (options.metrictype) {
+            case CN_SP_MT_MANH:
+                return dx + dy;
+            case CN_SP_MT_CHEB:
+                return std::max(dx, dy);
+            case CN_SP_MT_EUCL:
+                return sqrt(dx * 1LL * dx + dy * 1LL * dy);
+            case CN_SP_MT_DIAG:
+                return abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
+        }
     }
+
 }
 
 decltype(Search::close.cbegin()) Search::lookupCloseNode(const std::pair<int, int> &position) {

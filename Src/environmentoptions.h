@@ -5,8 +5,9 @@
 class EnvironmentOptions
 {
 public:
-    EnvironmentOptions(bool AS, bool AD, bool CC, int MT = CN_SP_MT_EUCL);
+    EnvironmentOptions(bool AS, bool AD, bool CC, int MT = CN_SP_MT_EUCL, int ST = CN_SP_ST_DIJK);
     EnvironmentOptions();
+    int     searchtype;
     int     metrictype;     //Can be chosen Euclidean, Manhattan, Chebyshev and Diagonal distance
     bool    allowsqueeze;   //Option that allows to move throught "bottleneck"
     bool    allowdiagonal;  //Option that allows to make diagonal moves

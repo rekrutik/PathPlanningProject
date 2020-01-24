@@ -38,6 +38,7 @@ bool Mission::createLog()
 
 void Mission::createEnvironmentOptions()
 {
+    options.searchtype = config.SearchParams[CN_SP_ST];
     options.cutcorners = config.SearchParams[CN_SP_CC];
     options.allowsqueeze = config.SearchParams[CN_SP_AS];
     options.allowdiagonal = config.SearchParams[CN_SP_AD];
