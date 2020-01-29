@@ -17,7 +17,6 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     sresult.numberofsteps = 0;
 
     while (!open.empty()) {
-        sresult.numberofsteps++;
         auto node = *open.begin();
         open.erase(open.begin());
 
@@ -44,6 +43,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             new_node.parent = &(*close_it);
             open.insert(new_node);
         }
+        sresult.numberofsteps++;
     }
 
     sresult.pathfound = found;
