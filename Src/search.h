@@ -40,7 +40,7 @@ class Search
             double delta = 0.0;
         };
 
-        std::set<Node> open;
+        std::set<Node, bool(*)(const Node &, const Node &)> open;
         std::set<Node, Node::CoordCompare> close;
 
         decltype(close.cbegin()) lookupCloseNode(const std::pair<int, int> &position);

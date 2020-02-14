@@ -10,9 +10,48 @@ Search::~Search() {}
 
 SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
+    switch (options.breakingties) {
+        case CN_SP_BT_GMIN:
+            open = std::set<Node, bool(*)(const Node &, const Node &)>([](const Node &a, const Node &b) {
+                if (a.F() < b.F()) {
+                    return true;
+                }
+                if (a.F() > b.F()) {
+                    return false;
+                }
+                if (a.g < b.g) {
+                    return true;
+                }
+                if (a.g > b.g) {
+                    return false;
+                }
+                return a.i < b.i || (a.i == b.i && a.j < b.j);
+            });
+            break;
+        case CN_SP_BT_GMAX:
+            open = std::set<Node, bool(*)(const Node &, const Node &)>([](const Node &a, const Node &b) {
+                if (a.F() < b.F()) {
+                    return true;
+                }
+                if (a.F() > b.F()) {
+                    return false;
+                }
+                if (a.g < b.g) {
+                    return false;
+                }
+                if (a.g > b.g) {
+                    return true;
+                }
+                return a.i < b.i || (a.i == b.i && a.j < b.j);
+            });
+            break;
+    }
+
     auto t = std::chrono::high_resolution_clock::now();
     bool found = false;
-    open.insert(Node(map.getStartPosition().first, map.getStartPosition().second));
+    auto node = Node(map.getStartPosition().first, map.getStartPosition().second);
+    node.H = getHeuristics(node.getPosition(), map, options);
+    open.insert(node);
 
     sresult.numberofsteps = 0;
 
@@ -91,16 +130,18 @@ double Search::getHeuristics(
         auto finish = Map.getGoalPosition();
         auto dx = abs(position.first - finish.first);
         auto dy = abs(position.second - finish.second);
+        double ret = 0.0;
         switch (options.metrictype) {
             case CN_SP_MT_MANH:
-                return dx + dy;
+                ret = dx + dy;
             case CN_SP_MT_CHEB:
-                return std::max(dx, dy);
+                ret = std::max(dx, dy);
             case CN_SP_MT_EUCL:
-                return sqrt(dx * 1LL * dx + dy * 1LL * dy);
+                ret = sqrt(dx * 1LL * dx + dy * 1LL * dy);
             case CN_SP_MT_DIAG:
-                return abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
+                ret = abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
         }
+        return ret * options.heuristicweight;
     }
 
 }

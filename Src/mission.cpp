@@ -43,6 +43,8 @@ void Mission::createEnvironmentOptions()
     options.allowsqueeze = config.SearchParams[CN_SP_AS];
     options.allowdiagonal = config.SearchParams[CN_SP_AD];
     options.metrictype = config.SearchParams[CN_SP_MT];
+    options.heuristicweight = config.SearchParams[CN_SP_HW];
+    options.breakingties = config.SearchParams[CN_SP_BT];
 
 }
 
