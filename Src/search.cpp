@@ -134,12 +134,16 @@ double Search::getHeuristics(
         switch (options.metrictype) {
             case CN_SP_MT_MANH:
                 ret = dx + dy;
+                break;
             case CN_SP_MT_CHEB:
                 ret = std::max(dx, dy);
+                break;
             case CN_SP_MT_EUCL:
                 ret = sqrt(dx * 1LL * dx + dy * 1LL * dy);
+                break;
             case CN_SP_MT_DIAG:
                 ret = abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
+                break;
         }
         return ret * options.heuristicweight;
     }
