@@ -41,6 +41,7 @@ class Mission
         ILogger*                logger;
         const char*             fileName;
         SearchResult            sr;
+        int logLevelIntValue() const;
 };
 
 #endif

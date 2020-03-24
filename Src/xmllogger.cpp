@@ -124,14 +124,30 @@ void XmlLogger::writeToLogMap(const Map &map, const std::list<Node> &path)
     }
 }
 
-/*void XmlLogger::writeToLogOpenClose(const typename &open, const typename &close)
+void XmlLogger::writeToLogOpenClose(const std::vector<Node> &open, const std::set<Node, Node::CoordCompare> &close, int step)
 {
-    //need to implement
-    if (loglevel != CN_LP_LEVEL_FULL_WORD  && !(loglevel == CN_LP_LEVEL_MEDIUM_WORD && last))
+    if (loglevel != CN_LP_LEVEL_FULL_WORD  && loglevel != CN_LP_LEVEL_MEDIUM_WORD)
         return;
 
+    XMLElement *rootTag = doc.FirstChildElement(CNS_TAG_ROOT);
+    XMLElement *lowLevelTag = rootTag->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_LOWLEVEL);
+    XMLElement *stepTag = doc.NewElement(CNS_TAG_STEP);
+    stepTag->SetAttribute(CNS_TAG_ATTR_NUM, step);
 
-}*/
+    XMLElement *openTag = doc.NewElement(CNS_TAG_OPEN);
+    for (const auto &node : open) {
+        openTag->InsertEndChild(createElement(node));
+    }
+
+    XMLElement *closeTag = doc.NewElement(CNS_TAG_CLOSE);
+    for (const auto &node : close) {
+        closeTag->InsertEndChild(createElement(node));
+    }
+
+    stepTag->InsertEndChild(openTag);
+    stepTag->InsertEndChild(closeTag);
+    lowLevelTag->InsertEndChild(stepTag);
+}
 
 void XmlLogger::writeToLogPath(const std::list<Node> &path)
 {
@@ -198,4 +214,17 @@ void XmlLogger::writeToLogNotFound()
 
     XMLElement *node = doc.FirstChildElement(CNS_TAG_ROOT)->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_PATH);
     node->InsertEndChild(doc.NewText("Path NOT found!"));
+}
+
+tinyxml2::XMLElement *XmlLogger::createElement(const Node &node) {
+    XMLElement *tag = doc.NewElement(CNS_TAG_POINT);
+    tag->SetAttribute(CNS_TAG_ATTR_X, node.j);
+    tag->SetAttribute(CNS_TAG_ATTR_Y, node.i);
+    tag->SetAttribute(CNS_TAG_ATTR_F, std::to_string(node.F()).c_str());
+    tag->SetAttribute(CNS_TAG_ATTR_G, std::to_string(node.g).c_str());
+    if (node.parent) {
+        tag->SetAttribute(CNS_TAG_ATTR_PARX, node.parent->j);
+        tag->SetAttribute(CNS_TAG_ATTR_PARY, node.parent->i);
+    }
+    return tag;
 }

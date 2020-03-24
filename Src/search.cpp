@@ -82,11 +82,25 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             new_node.parent = &(*close_it);
             open.insert(new_node);
         }
+        if (Logger->loglevel == CN_LP_LEVEL_FULL_WORD) {
+            Logger->writeToLogOpenClose(uniqueOpen(), close, sresult.numberofsteps);
+        }
         sresult.numberofsteps++;
     }
 
     sresult.pathfound = found;
-    sresult.nodescreated = open.size() + close.size();
+    if (Logger->loglevel == CN_LP_LEVEL_MEDIUM_WORD) {
+        Logger->writeToLogOpenClose(uniqueOpen(), close, 0);
+    }
+    else if (Logger->loglevel == CN_LP_LEVEL_FULL_WORD) {
+        Logger->writeToLogOpenClose(uniqueOpen(), close, sresult.numberofsteps);
+    }
+    auto close_copy = close;
+    for (const auto &node : open) {
+        close_copy.insert(node);
+    }
+    sresult.nodescreated = close_copy.size();
+
     if (sresult.pathfound) {
         auto current_node = &(*lookupCloseNode(map.getGoalPosition()));
         sresult.pathlength = current_node->g;
@@ -96,6 +110,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             current_node = current_node->parent;
             lppath.push_back(*current_node);
         }
+        std::reverse(lppath.begin(), lppath.end());
 
         sresult.lppath = &lppath;
         hppath.push_back(lppath.front());
@@ -113,6 +128,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             }
         }
         hppath.push_back(lppath.back());
+        //std::reverse(hppath.begin(), hppath.end());
         sresult.hppath = &hppath;
     }
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
@@ -181,6 +197,18 @@ Search::getAdjacent(const std::pair<int, int> &position, const Map &map, const E
             adj.position = std::make_pair(position.first + i, position.second + j);
             adj.delta = diagonal ? sqrt(2.0) : 1.0;
             res.push_back(adj);
+        }
+    }
+    return res;
+}
+
+std::vector<Node> Search::uniqueOpen() const {
+    std::vector<Node> res;
+    std::set<std::pair<int, int>> used;
+    for (const auto &node : open) {
+        if (used.find({node.i, node.j}) == used.end() && close.find({node.i, node.j}) == close.end()) {
+            used.insert({node.i, node.j});
+            res.push_back(node);
         }
     }
     return res;

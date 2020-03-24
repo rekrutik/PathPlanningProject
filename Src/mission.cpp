@@ -90,3 +90,21 @@ SearchResult Mission::getSearchResult()
     return sr;
 }
 
+int Mission::logLevelIntValue() const {
+    if (config.LogParams[CN_LP_LEVEL] == CN_LP_LEVEL_NOPE_WORD) {
+        return 0;
+    }
+    if (config.LogParams[CN_LP_LEVEL] == CN_LP_LEVEL_TINY_WORD) {
+        return 1;
+    }
+    if (config.LogParams[CN_LP_LEVEL] == CN_LP_LEVEL_SHORT_WORD) {
+        return 2;
+    }
+    if (config.LogParams[CN_LP_LEVEL] == CN_LP_LEVEL_MEDIUM_WORD) {
+        return 3;
+    }
+    if (config.LogParams[CN_LP_LEVEL] == CN_LP_LEVEL_FULL_WORD) {
+        return 4;
+    }
+}
+

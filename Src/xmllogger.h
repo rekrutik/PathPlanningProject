@@ -20,7 +20,7 @@ public:
 
     void writeToLogMap(const Map &Map, const std::list<Node> &path);
 
-    //void writeToLogOpenClose(const typename &open, const typename &close);
+    void writeToLogOpenClose(const std::vector<Node> &open, const std::set<Node, Node::CoordCompare> &close, int step);
 
     void writeToLogPath(const std::list<Node> &path);
 
@@ -31,6 +31,7 @@ public:
     void writeToLogSummary(unsigned int numberofsteps, unsigned int nodescreated, float length, double time, double cellSize);
 
 private:
+    tinyxml2::XMLElement *createElement(const Node &node);
     std::string LogFileName;
     tinyxml2::XMLDocument doc;
 };
