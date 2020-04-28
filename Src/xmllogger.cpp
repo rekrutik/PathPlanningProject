@@ -72,7 +72,7 @@ void XmlLogger::saveLog()
 }
 
 void XmlLogger::writeToLogNewResult() {
-    if (loglevel == CN_LP_LEVEL_NOPE_WORD || loglevel == CN_LP_LEVEL_TINY_WORD)
+    if (loglevel == CN_LP_LEVEL_NOPE_WORD)
         return;
 
     XMLElement *mapTag = doc.FirstChildElement(CNS_TAG_ROOT);
