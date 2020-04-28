@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Визуализация A*/ARA*</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    </head>
+    <style type="text/css">
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #main {
+            display: flex;
+            flex-direction: row;
+            height: 800px;
+        }
+        #cvs {
+            display: flex-inline;
+            flex: 1;
+        }
+        #properties {
+            display: flex-inline;
+            width: 300px;
+            background: #eee;
+        }
+    </style>
+    <body>
+        <div id="main"> 
+            <canvas id="cvs" width="1200" height="1200">
+            </canvas>
+            <div id="properties">
+                <h2>Визуализатор</h2>
+                <input type="file" id="file">
+                <input type="text" id="result_count"></h3>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var cvs = document.getElementById("cvs");
+            cvs.width = cvs.width;
+            cvs.height = cvs.height;
+            var ctx = cvs.getContext("2d");
+            var globalXml = null;
+            function onNewXml(xml, res = 0) {
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                var map = xml.getElementsByTagName("root")[0].getElementsByTagName("map")[0];
+                var width = parseInt(map.getElementsByTagName("width")[0].textContent);
+                var height = parseInt(map.getElementsByTagName("height")[0].textContent);
+                var S = 2;
+                console.log(width.textContent);
+                ctx.fillStyle = '#eeeeee';
+                for (var i = 0; i < height; i++) {
+                    for (var j = 0; j < width; j++) {
+                        if ((i + j) % 2 == 0) {
+                            ctx.fillRect(S * j, S * i, S, S);
+                        }
+                    }
+                }
+                var path = xml.getElementsByTagName("root")[0].getElementsByTagName("log")[0].getElementsByTagName("result")[res].getElementsByTagName("path")[0];
+                for (var i = 0; i < height; i++) {
+                    var line = path.getElementsByTagName("row")[i].textContent.split(" ");
+                    for (var j = 0; j < width; j++) {
+                        if (line[j] == "1") {
+                            ctx.fillStyle = '#333333';
+                            ctx.fillRect(S * j, S * i, S, S);
+                        }
+                        if (line[j] == "*") {
+                            ctx.fillStyle = '#FF0000';
+                            ctx.fillRect(S * j, S * i, S, S);
+                        }
+                    }
+                }
+            }
+            document.getElementById("file").addEventListener("change", function() {
+            if (this.files && this.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(){
+                    var text = reader.result;
+                    var parser = new DOMParser();
+                    var xmlDoc = parser.parseFromString(text, "text/xml");
+                    globalXml = xmlDoc;
+                    onNewXml(xmlDoc, 0);
+                };
+                reader.readAsText(this.files[0]);
+            }   
+            });
+            document.getElementById("result_count").addEventListener("input", function() {
+                console.log("zxc");
+                onNewXml(globalXml, parseInt(this.value));
+            });
+        </script>
+    </body>
+</html>
