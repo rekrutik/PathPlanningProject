@@ -18,6 +18,8 @@ public:
 
     void saveLog();
 
+    void writeToLogNewResult();
+
     void writeToLogMap(const Map &Map, const std::list<Node> &path);
 
     void writeToLogOpenClose(const std::vector<Node> &open, const std::set<Node, Node::CoordCompare> &close, int step);

@@ -1,6 +1,8 @@
 #ifndef MISSION_H
 #define	MISSION_H
 
+#include <vector>
+
 #include "map.h"
 #include "config.h"
 #include "search.h"
@@ -34,13 +36,13 @@ class Mission
         SearchResult getSearchResult();
         
     private:
-        Map                     map;
-        Config                  config;
-        EnvironmentOptions      options;
-        Search                  search;
-        ILogger*                logger;
-        const char*             fileName;
-        SearchResult            sr;
+        Map                       map;
+        Config                    config;
+        EnvironmentOptions        options;
+        Search                    search;
+        ILogger*                  logger;
+        const char*               fileName;
+        std::vector<SearchResult> srs;
         int logLevelIntValue() const;
 };
 

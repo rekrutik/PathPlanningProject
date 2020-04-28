@@ -21,6 +21,7 @@
     #define CNS_TAG_ALG             "algorithm"
         #define CNS_TAG_ST          "searchtype"
         #define CNS_TAG_HW          "hweight"
+        #define CNS_TAG_HS          "hstep"
         #define CNS_TAG_MT          "metrictype"
         #define CNS_TAG_BT          "breakingties"
         #define CNS_TAG_AS          "allowsqueeze"
@@ -33,19 +34,21 @@
         #define CNS_TAG_LOGFN       "logfilename"
 
     #define CNS_TAG_LOG             "log"
-        #define CNS_TAG_MAPFN       "mapfilename"
-        #define CNS_TAG_SUM         "summary"
-        #define CNS_TAG_PATH        "path"
-        #define CNS_TAG_LPLEVEL     "lplevel"
-        #define CNS_TAG_HPLEVEL     "hplevel"
-            #define CNS_TAG_SECTION "section"
-        #define CNS_TAG_LOWLEVEL    "lowlevel"
-            #define CNS_TAG_STEP    "step"
-            #define CNS_TAG_OPEN    "open"
-            #define CNS_TAG_POINT   "node"
-            #define CNS_TAG_CLOSE   "close"
+        #define CNS_TAG_RESULT       "result"
+            #define CNS_TAG_MAPFN       "mapfilename"
+            #define CNS_TAG_SUM         "summary"
+            #define CNS_TAG_PATH        "path"
+            #define CNS_TAG_LPLEVEL     "lplevel"
+            #define CNS_TAG_HPLEVEL     "hplevel"
+                #define CNS_TAG_SECTION "section"
+            #define CNS_TAG_LOWLEVEL    "lowlevel"
+                #define CNS_TAG_STEP    "step"
+                #define CNS_TAG_OPEN    "open"
+                #define CNS_TAG_POINT   "node"
+                #define CNS_TAG_CLOSE   "close"
 
 //XML tags' attributes
+    #define CNS_TAG_ATTR_RESULT_VAL     "value"
     #define CNS_TAG_ATTR_NUMOFSTEPS     "numberofsteps"
     #define CNS_TAG_ATTR_NODESCREATED   "nodescreated"
     #define CNS_TAG_ATTR_LENGTH         "length"
@@ -72,12 +75,14 @@
         #define CNS_SP_ST_ASTAR         "astar"
         #define CNS_SP_ST_JP_SEARCH     "jp_search"
         #define CNS_SP_ST_TH            "theta"
+        #define CNS_SP_ST_ARASTAR       "arastar"
 
         #define CN_SP_ST_BFS            0
         #define CN_SP_ST_DIJK           1
         #define CN_SP_ST_ASTAR          2
         #define CN_SP_ST_JP_SEARCH      3
         #define CN_SP_ST_TH             4
+        #define CN_SP_ST_ARASTAR        6
 
     #define CN_SP_AD 1 //AllowDiagonal
 
@@ -100,6 +105,8 @@
     #define CN_SP_HW 5 //HeuristicWeight
 
     #define CN_SP_BT 6 //BreakingTies
+
+    #define CN_SP_HS 7 //HeuristicStep
 
         #define CNS_SP_BT_GMIN "g-min"
         #define CNS_SP_BT_GMAX "g-max"

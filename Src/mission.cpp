@@ -44,6 +44,7 @@ void Mission::createEnvironmentOptions()
     options.allowdiagonal = config.SearchParams[CN_SP_AD];
     options.metrictype = config.SearchParams[CN_SP_MT];
     options.heuristicweight = config.SearchParams[CN_SP_HW];
+    options.heuristicstep = config.SearchParams[CN_SP_HS];
     options.breakingties = config.SearchParams[CN_SP_BT];
 
 }
@@ -55,39 +56,47 @@ void Mission::createSearch()
 
 void Mission::startSearch()
 {
-    sr = search.startSearch(logger, map, options);
+    bool br = false;
+    SearchResult sr;
+    do {
+        logger->writeToLogNewResult();
+        std::tie(br, sr) = search.startSearch(logger, map, options);
+        srs.push_back(sr);
+        logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.pathlength, sr.time, map.getCellSize());
+        if (sr.pathfound) {
+            logger->writeToLogPath(*sr.lppath);
+            logger->writeToLogHPpath(*sr.hppath);
+            logger->writeToLogMap(map, *sr.lppath);
+        } else
+            logger->writeToLogNotFound();
+    } while (br);
 }
 
 void Mission::printSearchResultsToConsole()
 {
-    std::cout << "Path ";
-    if (!sr.pathfound)
-        std::cout << "NOT ";
-    std::cout << "found!" << std::endl;
-    std::cout << "numberofsteps=" << sr.numberofsteps << std::endl;
-    std::cout << "nodescreated=" << sr.nodescreated << std::endl;
-    if (sr.pathfound) {
-        std::cout << "pathlength=" << sr.pathlength << std::endl;
-        std::cout << "pathlength_scaled=" << sr.pathlength * map.getCellSize() << std::endl;
+    for (const auto &sr : srs) {
+        std::cout << "Path ";
+        if (!sr.pathfound)
+            std::cout << "NOT ";
+        std::cout << "found!" << std::endl;
+        std::cout << "numberofsteps=" << sr.numberofsteps << std::endl;
+        std::cout << "nodescreated=" << sr.nodescreated << std::endl;
+        if (sr.pathfound) {
+            std::cout << "pathlength=" << sr.pathlength << std::endl;
+            std::cout << "pathlength_scaled=" << sr.pathlength * map.getCellSize() << std::endl;
+        }
+        std::cout << "time=" << sr.time << std::endl;
     }
-    std::cout << "time=" << sr.time << std::endl;
 }
 
 void Mission::saveSearchResultsToLog()
 {
-    logger->writeToLogSummary(sr.numberofsteps, sr.nodescreated, sr.pathlength, sr.time, map.getCellSize());
-    if (sr.pathfound) {
-        logger->writeToLogPath(*sr.lppath);
-        logger->writeToLogHPpath(*sr.hppath);
-        logger->writeToLogMap(map, *sr.lppath);
-    } else
-        logger->writeToLogNotFound();
     logger->saveLog();
 }
 
 SearchResult Mission::getSearchResult()
 {
-    return sr;
+    return srs.back();
 }
 
 int Mission::logLevelIntValue() const {

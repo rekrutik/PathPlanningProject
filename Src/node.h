@@ -9,10 +9,11 @@ struct Node
 {
     int     i = -1, j = -1; //grid cell coordinates
     double  g = 0.0, H = 0.0; //f-, g- and h-values of the search node
-    const Node *parent = nullptr; //backpointer to the predecessor node (e.g. the node which g-value was used to set the g-velue of the current node)
+    std::pair<int, int> parent = {-1, -1}; //backpointer to the predecessor node (e.g. the node which g-value was used to set the g-velue of the current node)
 
 public:
     Node(int i, int j) : i(i), j(j) {}
+    Node(const std::pair<int, int> &p) : i(p.first), j(p.second) {}
     std::pair<int, int> getPosition() const { return std::make_pair(i, j); }
     double F() const { return g + H; }
     bool operator==(const Node &other) const {

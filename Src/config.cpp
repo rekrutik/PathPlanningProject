@@ -61,14 +61,16 @@ bool Config::getConfig(const char *FileName)
         SearchParams = new double[N];
         SearchParams[CN_SP_ST] = CN_SP_ST_DIJK;
     }
-    else if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_JP_SEARCH || value == CNS_SP_ST_TH) {
-        N = 7;
+    else if (value == CNS_SP_ST_ASTAR || value == CNS_SP_ST_JP_SEARCH || value == CNS_SP_ST_TH || value == CNS_SP_ST_ARASTAR) {
+        N = 8;
         SearchParams = new double[N];
         SearchParams[CN_SP_ST] = CN_SP_ST_ASTAR;
         if (value == CNS_SP_ST_JP_SEARCH)
             SearchParams[CN_SP_ST] = CN_SP_ST_JP_SEARCH;
         else if (value == CNS_SP_ST_TH)
             SearchParams[CN_SP_ST] = CN_SP_ST_TH;
+        else if (value == CNS_SP_ST_ARASTAR)
+            SearchParams[CN_SP_ST] = CN_SP_ST_ARASTAR;
         element = algorithm->FirstChildElement(CNS_TAG_HW);
         if (!element) {
             std::cout << "Warning! No '" << CNS_TAG_HW << "' tag found in algorithm section." << std::endl;
@@ -88,6 +90,24 @@ bool Config::getConfig(const char *FileName)
                 SearchParams[CN_SP_HW] = 1;
             }
         }
+        if (value == CNS_SP_ST_ARASTAR) {
+            element = algorithm->FirstChildElement(CNS_TAG_HS);
+            if (!element) {
+                SearchParams[CN_SP_HS] = 0.5;
+            } else {
+                stream << element->GetText();
+                stream >> SearchParams[CN_SP_HS];
+                stream.str("");
+                stream.clear();
+                if (SearchParams[CN_SP_HS] <= 0) {
+                    std::cout << "Warning! Value of '" << CNS_TAG_HS << "' tag is not correctly specified. Should be > 0."
+                              << std::endl;
+                    std::cout << "Value of '" << CNS_TAG_HS << "' was defined to 0.5." << std::endl;
+                    SearchParams[CN_SP_HS] = 0.5;
+                }
+            }
+        }
+
 
         element = algorithm->FirstChildElement(CNS_TAG_MT);
         if (!element) {

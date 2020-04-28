@@ -17,7 +17,7 @@ class Search
     public:
         Search();
         ~Search(void);
-        SearchResult startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options);
+        std::pair<bool, SearchResult> startSearch(ILogger *Logger, const Map &Map, const EnvironmentOptions &options);
 
     protected:
         struct Adjacent {
@@ -27,6 +27,8 @@ class Search
 
         std::set<Node, bool(*)(const Node &, const Node &)> open;
         std::set<Node, Node::CoordCompare> close;
+        std::set<Node, Node::CoordCompare> incons;
+        double hweight;
 
         decltype(close.cbegin()) lookupCloseNode(const std::pair<int, int> &position);
         decltype(open.cbegin()) lookupOpenNode(const std::pair<int, int> &position);

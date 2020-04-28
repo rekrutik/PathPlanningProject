@@ -19,14 +19,14 @@ set(SOURCES         config.cpp
                     tinyxml2.cpp
                     xmllogger.cpp)
 
-add_executable(PathPlanning ${HEADERS} ${SOURCES} main.cpp)
+add_executable(ARAStarPathPlanning ${HEADERS} ${SOURCES} main.cpp)
 
 add_library(PPLIB ${HEADERS} ${SOURCES})
 
-install(TARGETS PathPlanning 
+install(TARGETS ARAStarPathPlanning
         CONFIGURATIONS Debug
         DESTINATION Bin/Debug)
 
-install(TARGETS PathPlanning 
+install(TARGETS ARAStarPathPlanning
         CONFIGURATIONS Release
         DESTINATION Bin/Release)

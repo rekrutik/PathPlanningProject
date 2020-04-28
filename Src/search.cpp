@@ -8,7 +8,7 @@ Search::Search()
 Search::~Search() {}
 
 
-SearchResult Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
+std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &map, const EnvironmentOptions &options)
 {
     switch (options.breakingties) {
         case CN_SP_BT_GMIN:
@@ -49,10 +49,34 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
 
     auto t = std::chrono::high_resolution_clock::now();
     bool found = false;
-    auto node = Node(map.getStartPosition().first, map.getStartPosition().second);
-    node.H = getHeuristics(node.getPosition(), map, options);
-    open.insert(node);
+    if (options.searchtype == CN_SP_ST_ARASTAR && !incons.empty()) {
+        auto new_hweight = hweight - options.heuristicstep;
+        if (close.find(map.getGoalPosition()) != close.end()) {
+            for (const auto &node : open) {
+                new_hweight = std::min(new_hweight, close.find(map.getGoalPosition())->g / (node.g + node.H / hweight));
+            }
+            for (const auto &node : incons) {
+                new_hweight = std::min(new_hweight, close.find(map.getGoalPosition())->g / (node.g + node.H / hweight));
+            }
+        }
+        hweight = std::max(1.0, new_hweight);
+        std::vector<Node> tmp;
+        std::copy(open.begin(), open.end(), std::back_inserter(tmp));
+        std::copy(incons.begin(), incons.end(), std::back_inserter(tmp));
+        for (auto &node : tmp) {
+            node.H = getHeuristics(node.getPosition(), map, options);
+        }
+        open.clear();
+        open.insert(tmp.begin(), tmp.end());
+        close.clear();
+    } else {
+        hweight = options.heuristicweight;
+        auto node = Node(map.getStartPosition().first, map.getStartPosition().second);
+        node.H = getHeuristics(node.getPosition(), map, options);
+        open.insert(node);
+    }
 
+    sresult = SearchResult();
     sresult.numberofsteps = 0;
 
     while (!open.empty()) {
@@ -71,7 +95,10 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
         }
 
         for (const auto &move : getAdjacent(node.getPosition(), map, options)) {
-            if (lookupCloseNode(move.position) != close.end()) {
+            if (close.find(move.position) != close.end()) {
+                if (options.searchtype == CN_SP_ST_ARASTAR) {
+                    incons.insert(*close.find(move.position));
+                }
                 continue;
             }
             auto new_g = move.delta + node.g;
@@ -79,7 +106,7 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
             Node new_node(move.position.first, move.position.second);
             new_node.g = new_g;
             new_node.H = getHeuristics(new_node.getPosition(), map, options);
-            new_node.parent = &(*close_it);
+            new_node.parent = node.getPosition();
             open.insert(new_node);
         }
         if (Logger->loglevel == CN_LP_LEVEL_FULL_WORD) {
@@ -102,13 +129,14 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     sresult.nodescreated = close_copy.size();
 
     if (sresult.pathfound) {
-        auto current_node = &(*lookupCloseNode(map.getGoalPosition()));
+        auto current_node = lookupCloseNode(map.getGoalPosition());
+        std::cout << current_node->i << " " << current_node->j << std::endl;
         sresult.pathlength = current_node->g;
-        const auto finish = *lookupCloseNode(map.getStartPosition());
         lppath.push_back(*current_node);
-        while (*current_node != finish) {
-            current_node = current_node->parent;
+        while (current_node->getPosition() != map.getStartPosition()) {
+            current_node = lookupCloseNode(current_node->parent);
             lppath.push_back(*current_node);
+            std::cout << current_node->i << " " << current_node->j << std::endl;
         }
         std::reverse(lppath.begin(), lppath.end());
 
@@ -133,7 +161,10 @@ SearchResult Search::startSearch(ILogger *Logger, const Map &map, const Environm
     }
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
     sresult.time = d.count();
-    return sresult;
+    if (options.searchtype == CN_SP_ST_ARASTAR) {
+        return {hweight != 1.0, sresult};
+    }
+    return {false, sresult};
 }
 
 double Search::getHeuristics(
@@ -142,7 +173,7 @@ double Search::getHeuristics(
         const EnvironmentOptions &options) {
     if (options.searchtype == CN_SP_ST_DIJK) {
         return 0.0;
-    } else if (options.searchtype == CN_SP_ST_ASTAR) {
+    } else if (options.searchtype & CN_SP_ST_ASTAR) {
         auto finish = Map.getGoalPosition();
         auto dx = abs(position.first - finish.first);
         auto dy = abs(position.second - finish.second);
@@ -161,17 +192,17 @@ double Search::getHeuristics(
                 ret = abs(dx - dy) + sqrt(2.0) * (std::max(dx, dy) - abs(dx - dy));
                 break;
         }
-        return ret * options.heuristicweight;
+        return ret * hweight;
     }
 
 }
 
 decltype(Search::close.cbegin()) Search::lookupCloseNode(const std::pair<int, int> &position) {
-    auto it = close.lower_bound(Node(position.first, position.second));
-    if (it != close.end() && it->i == position.first && it->j == position.second) {
-        return it;
+    auto it = close.find(position);
+    if (it == close.end()) {
+        it = incons.find(position);
     }
-    return close.end();
+    return it;
 }
 
 decltype(Search::open.cbegin()) Search::lookupOpenNode(const std::pair<int, int> &position) {

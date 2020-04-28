@@ -61,23 +61,6 @@ bool XmlLogger::getLog(const char *FileName, const std::string *LogParams)
 
     root = (root->LastChild())->ToElement();
 
-    if (loglevel != CN_LP_LEVEL_NOPE_WORD) {
-        log = doc.NewElement(CNS_TAG_MAPFN);
-        log->LinkEndChild(doc.NewText(FileName));
-        root->InsertEndChild(log);
-
-        root->InsertEndChild(doc.NewElement(CNS_TAG_SUM));
-
-        root->InsertEndChild(doc.NewElement(CNS_TAG_PATH));
-
-        root->InsertEndChild(doc.NewElement(CNS_TAG_LPLEVEL));
-
-        root->InsertEndChild(doc.NewElement(CNS_TAG_HPLEVEL));
-    }
-
-    if (loglevel == CN_LP_LEVEL_FULL_WORD || loglevel == CN_LP_LEVEL_MEDIUM_WORD)
-        root->InsertEndChild(doc.NewElement(CNS_TAG_LOWLEVEL));
-
     return true;
 }
 
@@ -88,13 +71,31 @@ void XmlLogger::saveLog()
     doc.SaveFile(LogFileName.c_str());
 }
 
+void XmlLogger::writeToLogNewResult() {
+    if (loglevel == CN_LP_LEVEL_NOPE_WORD || loglevel == CN_LP_LEVEL_TINY_WORD)
+        return;
+
+    XMLElement *mapTag = doc.FirstChildElement(CNS_TAG_ROOT);
+    mapTag = mapTag->FirstChildElement(CNS_TAG_LOG);
+    XMLElement *element = doc.NewElement(CNS_TAG_RESULT);
+    if (loglevel != CN_LP_LEVEL_NOPE_WORD) {
+        element->InsertEndChild(doc.NewElement(CNS_TAG_SUM));
+        element->InsertEndChild(doc.NewElement(CNS_TAG_PATH));
+        element->InsertEndChild(doc.NewElement(CNS_TAG_LPLEVEL));
+        element->InsertEndChild(doc.NewElement(CNS_TAG_HPLEVEL));
+    }
+    if (loglevel == CN_LP_LEVEL_FULL_WORD || loglevel == CN_LP_LEVEL_MEDIUM_WORD)
+        element->InsertEndChild(doc.NewElement(CNS_TAG_LOWLEVEL));
+    mapTag->InsertEndChild(element);
+}
+
 void XmlLogger::writeToLogMap(const Map &map, const std::list<Node> &path)
 {
     if (loglevel == CN_LP_LEVEL_NOPE_WORD || loglevel == CN_LP_LEVEL_TINY_WORD)
         return;
 
     XMLElement *mapTag = doc.FirstChildElement(CNS_TAG_ROOT);
-    mapTag = mapTag->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_PATH);
+    mapTag = mapTag->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_PATH);
 
     int iterate = 0;
     bool inPath;
@@ -130,7 +131,7 @@ void XmlLogger::writeToLogOpenClose(const std::vector<Node> &open, const std::se
         return;
 
     XMLElement *rootTag = doc.FirstChildElement(CNS_TAG_ROOT);
-    XMLElement *lowLevelTag = rootTag->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_LOWLEVEL);
+    XMLElement *lowLevelTag = rootTag->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_LOWLEVEL);
     XMLElement *stepTag = doc.NewElement(CNS_TAG_STEP);
     stepTag->SetAttribute(CNS_TAG_ATTR_NUM, step);
 
@@ -155,7 +156,7 @@ void XmlLogger::writeToLogPath(const std::list<Node> &path)
         return;
     int iterate = 0;
     XMLElement *lplevel = doc.FirstChildElement(CNS_TAG_ROOT);
-    lplevel = lplevel->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_LPLEVEL);
+    lplevel = lplevel->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_LPLEVEL);
 
     for (std::list<Node>::const_iterator it = path.begin(); it != path.end(); it++) {
         XMLElement *element = doc.NewElement(CNS_TAG_POINT);
@@ -173,7 +174,7 @@ void XmlLogger::writeToLogHPpath(const std::list<Node> &hppath)
         return;
     int partnumber = 0;
     XMLElement *hplevel = doc.FirstChildElement(CNS_TAG_ROOT);
-    hplevel = hplevel->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_HPLEVEL);
+    hplevel = hplevel->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_HPLEVEL);
     std::list<Node>::const_iterator iter = hppath.begin();
     std::list<Node>::const_iterator it = hppath.begin();
 
@@ -198,7 +199,7 @@ void XmlLogger::writeToLogSummary(unsigned int numberofsteps, unsigned int nodes
         return;
 
     XMLElement *summary = doc.FirstChildElement(CNS_TAG_ROOT);
-    summary = summary->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_SUM);
+    summary = summary->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_SUM);
     XMLElement *element = summary->ToElement();
     element->SetAttribute(CNS_TAG_ATTR_NUMOFSTEPS, numberofsteps);
     element->SetAttribute(CNS_TAG_ATTR_NODESCREATED, nodescreated);
@@ -212,7 +213,7 @@ void XmlLogger::writeToLogNotFound()
     if (loglevel == CN_LP_LEVEL_NOPE_WORD)
         return;
 
-    XMLElement *node = doc.FirstChildElement(CNS_TAG_ROOT)->FirstChildElement(CNS_TAG_LOG)->FirstChildElement(CNS_TAG_PATH);
+    XMLElement *node = doc.FirstChildElement(CNS_TAG_ROOT)->FirstChildElement(CNS_TAG_LOG)->LastChildElement(CNS_TAG_RESULT)->FirstChildElement(CNS_TAG_PATH);
     node->InsertEndChild(doc.NewText("Path NOT found!"));
 }
 
@@ -222,9 +223,9 @@ tinyxml2::XMLElement *XmlLogger::createElement(const Node &node) {
     tag->SetAttribute(CNS_TAG_ATTR_Y, node.i);
     tag->SetAttribute(CNS_TAG_ATTR_F, std::to_string(node.F()).c_str());
     tag->SetAttribute(CNS_TAG_ATTR_G, std::to_string(node.g).c_str());
-    if (node.parent) {
-        tag->SetAttribute(CNS_TAG_ATTR_PARX, node.parent->j);
-        tag->SetAttribute(CNS_TAG_ATTR_PARY, node.parent->i);
+    if (node.parent != std::make_pair(-1, -1)) {
+        tag->SetAttribute(CNS_TAG_ATTR_PARX, node.parent.first);
+        tag->SetAttribute(CNS_TAG_ATTR_PARY, node.parent.second);
     }
     return tag;
 }

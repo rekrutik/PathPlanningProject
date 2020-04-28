@@ -12,6 +12,7 @@ class ILogger
         ILogger(std::string loglevel) {this->loglevel = loglevel;}
         virtual bool getLog(const char* FileName, const std::string* LogParams) = 0;
         virtual void saveLog() = 0;
+        virtual void writeToLogNewResult() = 0;
         virtual void writeToLogMap(const Map& map, const std::list<Node>& path) = 0;
         virtual void writeToLogOpenClose(const std::vector<Node> &open, const std::set<Node, Node::CoordCompare> &close, int step) = 0;
         virtual void writeToLogPath(const std::list<Node>& path) = 0;
