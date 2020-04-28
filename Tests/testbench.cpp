@@ -82,7 +82,14 @@ bool getRealResults(const char* fileName, float* realLen)
         return false;
     }
 
-    tinyxml2::XMLElement *sum = log->FirstChildElement(CNS_TAG_SUM);
+    tinyxml2::XMLElement *res = root->FirstChildElement(CNS_TAG_RESULT);
+    if (!res)
+    {
+        std::cerr << "Error! No '" << CNS_TAG_RESULT << "' tag found in XML file!" << std::endl;
+        return false;
+    }
+
+    tinyxml2::XMLElement *sum = res->FirstChildElement(CNS_TAG_SUM);
     if (!sum) 
     {
         std::cerr << "Error! No '" << CNS_TAG_SUM << "' tag found in XML file!" << std::endl;
