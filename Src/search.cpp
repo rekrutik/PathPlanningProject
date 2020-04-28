@@ -48,18 +48,8 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
     }
 
     auto t = std::chrono::high_resolution_clock::now();
-    bool found = false;
-    if (options.searchtype == CN_SP_ST_ARASTAR && !incons.empty()) {
-        auto new_hweight = hweight - options.heuristicstep;
-        if (close.find(map.getGoalPosition()) != close.end()) {
-            for (const auto &node : open) {
-                new_hweight = std::min(new_hweight, close.find(map.getGoalPosition())->g / (node.g + node.H / hweight));
-            }
-            for (const auto &node : incons) {
-                new_hweight = std::min(new_hweight, close.find(map.getGoalPosition())->g / (node.g + node.H / hweight));
-            }
-        }
-        hweight = std::max(1.0, new_hweight);
+    if (options.searchtype == CN_SP_ST_ARASTAR && sresult.time != 0) {
+        hweight = std::max(1.0, hweight - options.heuristicstep);
         std::vector<Node> tmp;
         std::copy(open.begin(), open.end(), std::back_inserter(tmp));
         std::copy(incons.begin(), incons.end(), std::back_inserter(tmp));
@@ -71,11 +61,13 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         close.clear();
     } else {
         hweight = options.heuristicweight;
-        auto node = Node(map.getStartPosition().first, map.getStartPosition().second);
+        auto node = Node(map.getStartPosition());
         node.H = getHeuristics(node.getPosition(), map, options);
         open.insert(node);
+        addToPos(node);
     }
 
+    bool found = sresult.pathfound;
     sresult = SearchResult();
     sresult.numberofsteps = 0;
 
@@ -86,27 +78,36 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         if (close.find(node) != close.end()) {
             continue;
         }
-
-        auto close_it = close.insert(node).first;
-
-        if (node.getPosition() == map.getGoalPosition()) {
+        close.insert(node);
+        if (options.searchtype != CN_SP_ST_ARASTAR && node.getPosition() == map.getGoalPosition()) {
             found = true;
+            break;
+        }
+        if (options.searchtype == CN_SP_ST_ARASTAR && node.F() >= goalFValue) {
+            found = pos.find(node.getPosition()) != pos.end();
             break;
         }
 
         for (const auto &move : getAdjacent(node.getPosition(), map, options)) {
-            if (close.find(move.position) != close.end()) {
-                if (options.searchtype == CN_SP_ST_ARASTAR) {
-                    incons.insert(*close.find(move.position));
-                }
+            auto new_g = move.delta + node.g;
+            auto it = pos.find(move.position);
+            if (it != pos.end() && it->g <= new_g) {
                 continue;
             }
-            auto new_g = move.delta + node.g;
-
-            Node new_node(move.position.first, move.position.second);
+            Node new_node(move.position);
             new_node.g = new_g;
             new_node.H = getHeuristics(new_node.getPosition(), map, options);
             new_node.parent = node.getPosition();
+            if (close.find(move.position) != close.end()) {
+                if (options.searchtype == CN_SP_ST_ARASTAR) {
+                    incons.insert(new_node);
+                }
+                continue;
+            }
+            if (move.position == map.getGoalPosition()) {
+                goalFValue = std::min(goalFValue, new_node.F());
+            }
+            addToPos(new_node);
             open.insert(new_node);
         }
         if (Logger->loglevel == CN_LP_LEVEL_FULL_WORD) {
@@ -114,7 +115,6 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         }
         sresult.numberofsteps++;
     }
-
     sresult.pathfound = found;
     if (Logger->loglevel == CN_LP_LEVEL_MEDIUM_WORD) {
         Logger->writeToLogOpenClose(uniqueOpen(), close, 0);
@@ -129,40 +129,48 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
     sresult.nodescreated = close_copy.size();
 
     if (sresult.pathfound) {
-        auto current_node = lookupCloseNode(map.getGoalPosition());
-        std::cout << current_node->i << " " << current_node->j << std::endl;
-        sresult.pathlength = current_node->g;
-        lppath.push_back(*current_node);
-        while (current_node->getPosition() != map.getStartPosition()) {
-            current_node = lookupCloseNode(current_node->parent);
-            lppath.push_back(*current_node);
-            std::cout << current_node->i << " " << current_node->j << std::endl;
+        auto current_node = *lookupCloseNode(map.getGoalPosition());
+        sresult.pathlength = goalFValue;
+        sresult.lppath.push_back(current_node);
+        while (current_node.getPosition() != map.getStartPosition()) {
+            current_node = *lookupCloseNode(current_node.parent);
+            sresult.lppath.push_back(current_node);
         }
-        std::reverse(lppath.begin(), lppath.end());
-
-        sresult.lppath = &lppath;
-        hppath.push_back(lppath.front());
+        std::reverse(sresult.lppath.begin(), sresult.lppath.end());
+        sresult.hppath.push_back(sresult.lppath.front());
         bool direction_set = false;
         std::pair<int, int> direction = {0, 0};
-        for (auto it = next(lppath.begin()); it != lppath.end(); ++it) {
+        for (auto it = next(sresult.lppath.begin()); it != sresult.lppath.end(); ++it) {
             auto prv = prev(it);
             std::pair<int, int> new_direction = {it->i - prv->i, it->j - prv->j};
             if (!direction_set) {
                 direction = new_direction;
                 direction_set = true;
             } else if (direction != new_direction) {
-                hppath.push_back(*prv);
+                sresult.hppath.push_back(*prv);
                 direction_set = false;
             }
         }
-        hppath.push_back(lppath.back());
-        //std::reverse(hppath.begin(), hppath.end());
-        sresult.hppath = &hppath;
+        sresult.hppath.push_back(sresult.lppath.back());
+    }
+    epsilon = hweight;
+    if (close.find(map.getGoalPosition()) != close.end()) {
+        auto closeNode = *close.find(map.getGoalPosition());
+        auto div = std::numeric_limits<double>::infinity();
+        for (const auto &node : open) {
+            div = std::min(div, node.g + node.H / hweight);
+        }
+        for (const auto &node : incons) {
+            div = std::min(div, node.g + node.H / hweight);
+        }
+        epsilon = std::min(epsilon, closeNode.g / div);
+        std::cout << "eps: " << epsilon << std::endl;
+        epsilon = std::max(1.0, epsilon);
     }
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
     sresult.time = d.count();
     if (options.searchtype == CN_SP_ST_ARASTAR) {
-        return {hweight != 1.0, sresult};
+        return {epsilon != 1.0, sresult};
     }
     return {false, sresult};
 }
@@ -197,12 +205,8 @@ double Search::getHeuristics(
 
 }
 
-decltype(Search::close.cbegin()) Search::lookupCloseNode(const std::pair<int, int> &position) {
-    auto it = close.find(position);
-    if (it == close.end()) {
-        it = incons.find(position);
-    }
-    return it;
+decltype(Search::pos.cbegin()) Search::lookupCloseNode(const std::pair<int, int> &position) {
+    return pos.find(position);
 }
 
 decltype(Search::open.cbegin()) Search::lookupOpenNode(const std::pair<int, int> &position) {
@@ -243,6 +247,18 @@ std::vector<Node> Search::uniqueOpen() const {
         }
     }
     return res;
+}
+
+void Search::addToPos(const Node &node) {
+    auto it = pos.find(node);
+    if (it != pos.end()) {
+        if (node.g <= it->g) {
+            pos.erase(it);
+            pos.insert(node);
+        }
+    } else {
+        pos.insert(node);
+    }
 }
 
 /*void Search::makePrimaryPath(Node curNode)
