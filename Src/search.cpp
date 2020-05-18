@@ -60,7 +60,7 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         open.insert(tmp.begin(), tmp.end());
         close.clear();
     } else {
-        hweight = options.heuristicweight;
+        epsilon = hweight = options.heuristicweight;
         auto node = Node(map.getStartPosition());
         node.H = getHeuristics(node.getPosition(), map, options);
         open.insert(node);
@@ -75,7 +75,7 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         auto node = *open.begin();
         open.erase(open.begin());
 
-        if (close.find(node) != close.end()) {
+        if (options.searchtype != CN_SP_ST_ARASTAR && close.find(node) != close.end()) {
             continue;
         }
         close.insert(node);
@@ -84,30 +84,32 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
             break;
         }
         if (options.searchtype == CN_SP_ST_ARASTAR && node.F() >= goalFValue) {
-            found = pos.find(node.getPosition()) != pos.end();
+            std::cout << "break " << node.F() << " " << goalFValue << std::endl;
+            found = pos.find(map.getGoalPosition()) != pos.end();
             break;
         }
 
         for (const auto &move : getAdjacent(node.getPosition(), map, options)) {
-            auto new_g = move.delta + node.g;
+            auto new_g = move.delta + pos.find(node.getPosition())->g;
+            /*auto cit = close.find(move.position);
             auto it = pos.find(move.position);
             if (it != pos.end() && it->g <= new_g) {
                 continue;
-            }
+            }*/
             Node new_node(move.position);
             new_node.g = new_g;
             new_node.H = getHeuristics(new_node.getPosition(), map, options);
             new_node.parent = node.getPosition();
-            if (close.find(move.position) != close.end()) {
+            addToPos(new_node);
+            if (new_node.getPosition() == map.getGoalPosition()) {
+                goalFValue = std::min(goalFValue, new_node.F());
+            }
+            if (close.find(new_node.getPosition()) != close.end()) {
                 if (options.searchtype == CN_SP_ST_ARASTAR) {
                     incons.insert(new_node);
                 }
                 continue;
             }
-            if (move.position == map.getGoalPosition()) {
-                goalFValue = std::min(goalFValue, new_node.F());
-            }
-            addToPos(new_node);
             open.insert(new_node);
         }
         if (Logger->loglevel == CN_LP_LEVEL_FULL_WORD) {
@@ -130,7 +132,7 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
 
     if (sresult.pathfound) {
         auto current_node = *lookupCloseNode(map.getGoalPosition());
-        sresult.pathlength = goalFValue;
+        sresult.pathlength = pos.find(map.getGoalPosition())->g;
         sresult.lppath.push_back(current_node);
         while (current_node.getPosition() != map.getStartPosition()) {
             current_node = *lookupCloseNode(current_node.parent);
@@ -153,9 +155,8 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         }
         sresult.hppath.push_back(sresult.lppath.back());
     }
-    epsilon = hweight;
-    if (close.find(map.getGoalPosition()) != close.end()) {
-        auto closeNode = *close.find(map.getGoalPosition());
+    if (pos.find(map.getGoalPosition()) != pos.end()) {
+        auto closeNode = *pos.find(map.getGoalPosition());
         auto div = std::numeric_limits<double>::infinity();
         for (const auto &node : open) {
             div = std::min(div, node.g + node.H / hweight);
@@ -163,14 +164,15 @@ std::pair<bool, SearchResult> Search::startSearch(ILogger *Logger, const Map &ma
         for (const auto &node : incons) {
             div = std::min(div, node.g + node.H / hweight);
         }
-        epsilon = std::min(epsilon, closeNode.g / div);
-        std::cout << "eps: " << epsilon << std::endl;
+        epsilon = std::min(epsilon, goalFValue / div);
+        std::cout << "eps: " << epsilon << " " << div << " " << hweight << std::endl;
         epsilon = std::max(1.0, epsilon);
     }
+    //epsilon = std::min(epsilon, std::max(1.0, hweight));
     std::chrono::duration<double> d = std::chrono::high_resolution_clock::now() - t;
     sresult.time = d.count();
     if (options.searchtype == CN_SP_ST_ARASTAR) {
-        return {epsilon != 1.0, sresult};
+        return {hweight != 1.0, sresult};
     }
     return {false, sresult};
 }
